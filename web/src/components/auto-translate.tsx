@@ -47,7 +47,7 @@ function dateNames(lang: string): Names {
   }
 }
 
-function lookup(lex: Lex, raw: string, frag: [string, string][], names: Names): string | null {
+function lookup(lex: Lex, raw: string, frag: [string, string][], names: Names, whole = false): string | null {
   const key = raw.replace(/\s+/g, " ").trim();
   if (!key || !/[A-Za-z]/.test(key)) return null;
   const hit = lex[key];
@@ -59,6 +59,7 @@ function lookup(lex: Lex, raw: string, frag: [string, string][], names: Names): 
     const pattern = lex[key.replace(NUM, "{n}")];
     if (pattern !== undefined) return pattern.replace(/\{n\}/g, () => nums[i++] ?? "");
   }
+  if (whole) return null; // labels read by screen readers are translated only as whole phrases
   // Mixed text such as "Next number: INV-4" or "pay by 14 Oct 2026": translate the known pieces and dates inside it.
   let out = key;
   if (names) out = out.replace(names.re, (w) => names.map.get(w) ?? w);
@@ -105,7 +106,7 @@ export function AutoTranslate({ lang }: { lang: string }) {
         const m = attrs.get(el) ?? new Map();
         const rec = m.get(a);
         if (rec && rec.out === cur) continue;
-        const tr = lex ? lookup(lex, cur, frag, names) : null;
+        const tr = lex ? lookup(lex, cur, frag, names, true) : null;
         const out = tr === null ? cur : tr;
         m.set(a, { en: cur, out });
         attrs.set(el, m);
